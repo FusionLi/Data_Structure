@@ -4,7 +4,7 @@ typedef struct binaryTree* binaryTreePTR;
 void CreateHeap(heapPTR* heapHandle, int root);
 int Insert(heapPTR heapHandle, int child);
 void PrintHeap (binaryTreePTR heapRoot);
-void DestroyHeap (heapPTR* heapHandle);
+void DestroyHeap (heapPTR heapHandle);
 
 // Max parent heap
 struct heap
