@@ -13,41 +13,42 @@ void CreateHeap(heapPTR* heapHandle, int root) {
 	return;
 }
 
-// mode: 0: insert; 1: delete
-static binaryTreePTR findLastNode (binaryTreePTR root, binaryTreePTR parentNode, int level, int mode) {
-	binaryTreePTR lastNode = root;
-	while (level != 0) {
-		if (mode == 0)
-			parentNode->parent = lastNode;
-		printf("level: %d and remainder: %d",level, level % 2);
-		if ((level-1) % 2 == 0)
-			lastNode = lastNode->left;
-		else
-			lastNode = lastNode->right;
-		level /= 2;
-	}
-	return lastNode;
-}
-
-/* 
--1: insert failure
-0: insert without modification
-1: insert with modification (swap parent and child)
+/*
+return: 0: insert without modifying the heap (no swap between parent and child)
+	1: insert with modifying the heap (swap between parent and child)
+	-1: failure in insertion
 */
 int Insert(heapPTR heapHandle, int child) {
 	if (heapHandle == NULL) 
 		return -1;
+	heapHandle->count += 1;
 	binaryTreePTR newNode = malloc(sizeof(struct binaryTree));
+	binaryTreePTR insertNode = heapHandle->heapHead;
 	newNode->data = child;
 	newNode->left = NULL;
 	newNode->right = NULL;
-	newNode->parent = NULL;
+	newNode->parent = insertNode;
 	// insert the node
-	binaryTreePTR insertNode = findLastNode (heapHandle->heapHead, newNode, heapHandle->count, 0);
-	insertNode = newNode;
+	int level = heapHandle->count;
+	while (level > 1) {
+		newNode->parent = insertNode;
+		if (level % 2 == 0)
+			insertNode = insertNode->left;
+		else
+			insertNode = insertNode->right;
+		level /= 2;
+	}
+	insertNode = newNode->parent; //trick part: insertNode after the while loop is actually the pointer pointing to where the node should be inserted but not
+				      // the node we can directly point to, so we need it parent node
+	if (insertNode->left == NULL) 
+		insertNode->left = newNode;
+	else 
+		insertNode->right = newNode;
+	PrintHeap(heapHandle->heapHead);
 	/* modify heap to if heap property is violated */
 	int insertType = 0;
 	// heap head's parent pointer points to NULL
+	insertNode = newNode; //trick part: same as above
 	while (insertNode->parent != NULL) {
 		// heap property has been violated
 		if (insertNode->data > (insertNode->parent)->data) {
@@ -59,7 +60,6 @@ int Insert(heapPTR heapHandle, int child) {
 		}
 		insertNode = insertNode->parent;
 	}
-	heapHandle->count += 1;
 	return insertType;
 }
 
@@ -75,7 +75,17 @@ void PrintHeap (binaryTreePTR heapRoot) {
 
 void DestroyHeap (heapPTR* heapHandle) {
 	for (int i = 0; i < (*heapHandle)->count; i++) {
-		struct binaryTree* deleteNode = findLastNode((*heapHandle)->heapHead, NULL, (*heapHandle)->count - i, 1);
+		binaryTreePTR traceNode = (*heapHandle)->heapHead;
+		binaryTreePTR deleteNode = (*heapHandle)->heapHead;
+		int level = (*heapHandle)->count - i;
+		while (level != 0) {
+			deleteNode = traceNode;
+			if (level % 2 == 0)
+				traceNode = traceNode->right;
+			else
+				traceNode = traceNode->left;
+			level /= 2;
+		}
 		free(deleteNode);
 	}
 	free(*heapHandle);
